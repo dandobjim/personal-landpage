@@ -1,0 +1,473 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Daniel Doblas Jiménez</title>
+<meta name="description" content="Daniel Doblas Jiménez · Data Software Engineer in Málaga">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: 'var(--ink)', panel: 'var(--panel)', panel2: 'var(--panel-2)', edge: 'var(--edge)',
+          paper: 'var(--paper)', muted: 'var(--muted)', daruma: 'var(--daruma)', gold: 'var(--gold)', sage: 'var(--sage)'
+        },
+        fontFamily: { display: ['"Press Start 2P"', 'ui-monospace', 'monospace'], body: ['VT323', 'ui-monospace', '"Courier New"', 'monospace'] }
+      }
+    }
+  }
+</script>
+<style>
+  /* Layout: arcade "character select" — title screen with the player sprite, then inventory, quest log, training and a CONTINUE? screen. */
+  :root {
+    --ink: #1a1220;      /* night behind the daruma shelves */
+    --panel: #261a2e;
+    --panel-2: #32233b;
+    --edge: #0c070f;
+    --paper: #f6efe2;    /* daruma face white */
+    --muted: #b3a3b8;
+    --daruma: #e2372c;   /* daruma red */
+    --gold: #f2b632;     /* gold brush strokes */
+    --sage: #bfc8b0;     /* the rain jacket */
+    --font-display: 'Press Start 2P', ui-monospace, monospace;
+    --font-body: 'VT323', ui-monospace, 'Courier New', monospace;
+    --px: 4px;
+    color-scheme: dark;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--font-body);
+    font-size: 22px;
+    line-height: 1.25;
+    -webkit-font-smoothing: none;
+  }
+  /* faint CRT scanlines */
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50;
+    background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.18) 2px 3px);
+  }
+  .font-display { letter-spacing: .02em; line-height: 1.6; }
+  h1, h2 { text-wrap: balance; }
+
+  /* notched pixel box */
+  .px-box {
+    background: var(--panel);
+    margin: var(--px);
+    box-shadow:
+      0 calc(var(--px) * -1) 0 0 var(--edge), 0 var(--px) 0 0 var(--edge),
+      calc(var(--px) * -1) 0 0 0 var(--edge), var(--px) 0 0 0 var(--edge),
+      inset 0 var(--px) 0 0 var(--panel-2);
+  }
+  .px-box--gold {
+    box-shadow:
+      0 calc(var(--px) * -1) 0 0 var(--gold), 0 var(--px) 0 0 var(--gold),
+      calc(var(--px) * -1) 0 0 0 var(--gold), var(--px) 0 0 0 var(--gold),
+      calc(var(--px) * 2) calc(var(--px) * 2) 0 0 var(--edge);
+  }
+
+  .px-btn {
+    font-family: var(--font-display); font-size: 11px; line-height: 1;
+    display: inline-flex; align-items: center; gap: .6em;
+    padding: 14px 16px; margin: var(--px);
+    background: var(--daruma); color: var(--paper);
+    box-shadow:
+      0 calc(var(--px) * -1) 0 0 var(--edge), 0 var(--px) 0 0 var(--edge),
+      calc(var(--px) * -1) 0 0 0 var(--edge), var(--px) 0 0 0 var(--edge),
+      inset 0 calc(var(--px) * -1) 0 0 rgba(0,0,0,.35);
+    cursor: pointer; text-decoration: none; transition: transform .05s;
+  }
+  .px-btn:hover { filter: brightness(1.1); }
+  .px-btn:active { transform: translateY(var(--px)); box-shadow: 0 calc(var(--px) * -1) 0 0 var(--edge), 0 var(--px) 0 0 var(--edge), calc(var(--px) * -1) 0 0 0 var(--edge), var(--px) 0 0 0 var(--edge); }
+  .px-btn--ghost { background: var(--panel-2); color: var(--sage); }
+  .px-btn--small { font-size: 9px; padding: 10px 12px; }
+  a:focus-visible, button:focus-visible { outline: 3px dashed var(--gold); outline-offset: 6px; }
+
+  .pixelated { image-rendering: pixelated; image-rendering: crisp-edges; }
+
+  .blink { animation: blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .label { font-family: var(--font-display); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+
+  .section-title { display: flex; align-items: center; gap: 14px; }
+  .section-title::after { content: ""; flex: 1; height: var(--px); background: repeating-linear-gradient(90deg, var(--muted) 0 8px, transparent 8px 16px); opacity: .5; }
+
+  .bullet { display: grid; grid-template-columns: 1.1em 1fr; gap: .2em; }
+  .bullet::before { content: "▸"; color: var(--gold); }
+
+  .seg { width: 18px; height: 14px; background: var(--panel-2); box-shadow: inset 0 -3px 0 rgba(0,0,0,.35); }
+  .seg.on { background: var(--sage); }
+  .seg.on.native { background: var(--gold); }
+
+  .nav { top: env(safe-area-inset-top, 0px); }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .blink { animation: none; }
+  }
+</style>
+
+<div class="min-h-full">
+  <!-- NAV -->
+  <nav class="nav sticky z-40 bg-ink border-b-4 border-edge">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+      <a href="#top" class="font-display text-[10px] text-gold no-underline">P1 · DANI</a>
+      <ul class="flex flex-wrap gap-x-5 gap-y-2 font-display text-[9px] text-muted">
+        <li><a class="hover:text-paper" href="#bio">BIO</a></li>
+        <li><a class="hover:text-paper" href="#inventory">SKILLS</a></li>
+        <li><a class="hover:text-paper" href="#quests">QUESTS</a></li>
+        <li><a class="hover:text-paper" href="#training">TRAINING</a></li>
+        <li><a class="hover:text-paper" href="#contact">CONTACT</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main id="top" class="max-w-5xl mx-auto px-4 pb-16">
+
+    <!-- TITLE SCREEN -->
+    <header class="pt-10 md:pt-14 pb-10 grid gap-10 md:grid-cols-[auto_1fr] items-center">
+      <figure class="justify-self-center md:justify-self-start flex flex-col items-center gap-4">
+        <div class="px-box px-box--gold p-2 bg-edge">
+          <canvas id="avatar" width="32" height="32" class="pixelated block w-[208px] h-[208px] sm:w-[256px] sm:h-[256px]" role="img" aria-label="Pixel art avatar of Daniel: short dark brown hair, wide smile, sage green rain jacket, red daruma dolls behind"></canvas>
+        </div>
+        <figcaption class="label text-muted">Player 1 · Málaga</figcaption>
+      </figure>
+
+      <div class="min-w-0">
+        <p class="label text-sage mb-4">Player select</p>
+        <h1 class="font-display text-paper text-[1.35rem] sm:text-[1.9rem] md:text-[2.25rem]">Daniel Doblas Jiménez</h1>
+        <p class="font-display text-[11px] sm:text-[13px] text-daruma mt-5">Class: Data Software Engineer</p>
+
+        <dl class="mt-7 grid grid-cols-[auto_1fr] gap-x-5 gap-y-1 text-[22px]">
+          <dt class="text-muted">STATUS</dt><dd>Software Engineer @ Ilkari</dd>
+          <dt class="text-muted">BASE</dt><dd>29010 Málaga, ES</dd>
+          <dt class="text-muted">MAIN</dt><dd>Python · SQL · dbt · Polars · FastAPI</dd>
+          <dt class="text-muted">LANG</dt><dd>Spanish (native) · English (B2)</dd>
+        </dl>
+
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href="#quests" class="px-btn" data-sfx><span class="blink">▶</span> PRESS START</a>
+          <a href="#contact" class="px-btn px-btn--ghost" data-sfx>CONTACT</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- BIO -->
+    <section id="bio" class="scroll-mt-24 pt-8">
+      <h2 class="section-title font-display text-[13px] text-gold mb-6">Player bio</h2>
+      <div class="px-box p-6 sm:p-8">
+        <p class="text-[24px] leading-snug max-w-[62ch]">
+          Results-focused data professional who designs, builds and optimizes complex data pipelines and ETL processes.
+          Strong in SQL, Python and cloud platforms, with a focus on clean data integration and robust data solutions.
+          Works best in collaborative teams, adapts quickly when requirements change, and keeps the whole party moving toward the goal.
+        </p>
+      </div>
+    </section>
+
+    <!-- INVENTORY -->
+    <section id="inventory" class="scroll-mt-24 pt-14">
+      <h2 class="section-title font-display text-[13px] text-gold mb-6">Inventory</h2>
+      <ul id="skills" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"></ul>
+
+      <div class="mt-8 grid gap-6 md:grid-cols-[1fr_1fr]">
+        <div class="px-box p-6 min-w-0">
+          <p class="label text-sage mb-4">Equipped tools</p>
+          <ul id="tools" class="flex flex-wrap gap-2"></ul>
+        </div>
+        <div class="px-box p-6 min-w-0">
+          <p class="label text-sage mb-4">Languages <span class="text-muted normal-case tracking-normal">· CEFR</span></p>
+          <div class="grid gap-4">
+            <div>
+              <div class="flex justify-between"><span>Spanish</span><span class="text-gold">NATIVE</span></div>
+              <div class="flex gap-1 mt-1" aria-hidden="true"><i class="seg on native"></i><i class="seg on native"></i><i class="seg on native"></i><i class="seg on native"></i><i class="seg on native"></i><i class="seg on native"></i></div>
+            </div>
+            <div>
+              <div class="flex justify-between"><span>English</span><span class="text-sage">B2</span></div>
+              <div class="flex gap-1 mt-1" aria-hidden="true"><i class="seg on"></i><i class="seg on"></i><i class="seg on"></i><i class="seg on"></i><i class="seg"></i><i class="seg"></i></div>
+              <div class="flex gap-1 mt-1 text-[14px] text-muted" aria-hidden="true">
+                <span class="w-[18px] text-center">A1</span><span class="w-[18px] text-center">A2</span><span class="w-[18px] text-center">B1</span><span class="w-[18px] text-center">B2</span><span class="w-[18px] text-center">C1</span><span class="w-[18px] text-center">C2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUEST LOG -->
+    <section id="quests" class="scroll-mt-24 pt-14">
+      <h2 class="section-title font-display text-[13px] text-gold mb-3">Quest log</h2>
+      <p class="text-muted mb-6 max-w-[62ch]">Daruma rule: one eye is painted when a goal is set, the second when it is reached.</p>
+      <ol id="questList" class="grid gap-5"></ol>
+    </section>
+
+    <!-- TRAINING -->
+    <section id="training" class="scroll-mt-24 pt-14">
+      <h2 class="section-title font-display text-[13px] text-gold mb-6">Training</h2>
+      <div class="grid gap-5 md:grid-cols-2">
+        <article class="px-box p-6 min-w-0">
+          <div class="flex flex-wrap justify-between gap-2"><span class="label text-sage">Master's · 06/2022</span><span class="label text-muted">UMA</span></div>
+          <h3 class="font-display text-[12px] leading-relaxed mt-4">Artificial Intelligence &amp; Big Data</h3>
+          <p class="mt-3 text-muted">Universidad de Málaga · Researcher at IBIMA, 2022</p>
+          <p class="mt-3">Thesis: <a class="text-gold underline decoration-dotted underline-offset-4 break-words" href="https://riuma.uma.es/xmlui/handle/10630/21107">Desarrollo de aplicación web FIMED 2.0</a></p>
+        </article>
+        <article class="px-box p-6 min-w-0">
+          <div class="flex flex-wrap justify-between gap-2"><span class="label text-sage">Degree · 06/2021</span><span class="label text-muted">UMA</span></div>
+          <h3 class="font-display text-[12px] leading-relaxed mt-4">Bioinformatics</h3>
+          <p class="mt-3 text-muted">Universidad de Málaga</p>
+          <p class="mt-3">Thesis: Automatic Design of Multi-objective Particle Swarm Optimizers</p>
+        </article>
+      </div>
+
+      <a href="https://link.springer.com/chapter/10.1007/978-3-031-20176-9_3" class="group mt-6 px-box px-box--gold p-5 flex items-center gap-5 no-underline text-paper">
+        <canvas id="trophy" width="12" height="12" class="pixelated w-[48px] h-[48px] shrink-0" aria-hidden="true"></canvas>
+        <span class="min-w-0">
+          <span class="label text-gold block">Achievement unlocked · Publication</span>
+          <span class="block mt-2 text-[22px] group-hover:underline">Automatic Design of Multi-objective Particle Swarm Optimizers <span class="text-muted">· Springer ↗</span></span>
+        </span>
+      </a>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact" class="scroll-mt-24 pt-16">
+      <div class="px-box p-6 sm:p-10 text-center">
+        <p class="font-display text-[18px] sm:text-[24px] text-daruma">CONTINUE?</p>
+        <p class="font-display text-[12px] text-gold mt-4"><span class="blink">INSERT MESSAGE</span></p>
+
+        <div class="mt-8 grid gap-4 text-left max-w-xl mx-auto">
+          <div class="flex flex-wrap items-center justify-between gap-3 bg-panel2 px-4 py-3">
+            <div class="min-w-0"><span class="label text-muted block">Email</span><span id="email" class="select-all break-all">dandobjim@outlook.com</span></div>
+            <button type="button" class="px-btn px-btn--small" data-copy="email" data-sfx>COPY</button>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-3 bg-panel2 px-4 py-3">
+            <div class="min-w-0"><span class="label text-muted block">Phone</span><span id="phone" class="select-all">+34 691 113 669</span></div>
+            <button type="button" class="px-btn px-btn--small" data-copy="phone" data-sfx>COPY</button>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-3 bg-panel2 px-4 py-3">
+            <div class="min-w-0"><span class="label text-muted block">GitHub</span><span>github.com/dandobjim</span></div>
+            <a class="px-btn px-btn--small px-btn--ghost" href="https://github.com/dandobjim" data-sfx>OPEN ↗</a>
+          </div>
+        </div>
+        <p id="toast" class="label text-sage mt-6 h-4" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <footer class="pt-12 flex flex-wrap justify-between gap-3 label text-muted">
+      <span>© 2026 Daniel Doblas Jiménez</span>
+      <span>Hi-score: 1 Springer publication</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+(() => {
+  /* ---------- Pixel renderer ---------- */
+  function drawMap(ctx, map, pal, ox = 0, oy = 0) {
+    map.forEach((row, y) => {
+      [...row].forEach((ch, x) => {
+        if (ch === '.' || !pal[ch]) return;
+        ctx.fillStyle = pal[ch];
+        ctx.fillRect(ox + x, oy + y, 1, 1);
+      });
+    });
+  }
+
+  const DARUMA = ['..RRRR..', '.RRRRRR.', 'RRwwwwRR', 'RwLwwOwR', 'RwwwwwwR', 'RRRggRRR', '.RRggRR.', '..RRRR..'];
+
+  /* ---------- Avatar (32×32) ---------- */
+  const AVATAR = [
+    '................................',
+    '................................',
+    '...........KKKKKKKKKK...........',
+    '..........KHHHHHhhHHHK..........',
+    '.........KHHHHHHhhhHHHK.........',
+    '.........KHHHHHHHHhhHHK.........',
+    '.........KHHHHHHHHHHHHK.........',
+    '.........KHHSSSSSSSSHHK.........',
+    '.........KHSSSSSSSSSSHK.........',
+    '.........KSShHHSSHHhSSK.........',
+    '........KSSSWESSSSEWSSSK........',
+    '........KsSSSSSsSSmSSSsK........',
+    '........KsSSMSSssSSMSSsK........',
+    '.........KSSSwwwwwwSSSK.........',
+    '.........KsSSSMMMMSSSsK.........',
+    '..........KsSSSSSSSSsK..........',
+    '...........KsSSSSSSsK...........',
+    '...........KJnsSSSSsnJK.........',
+    '....KJJJJJJJlJnSSnJlJJJJJJJK....',
+    '...KJJJJJJJJJlJnnJlJJJJJJJJJK...',
+    '..KJJJJJJJJJJJJJZjJJJJJJJJJJJK..',
+    '..KJJJJJJJJJJnJJZjJnJJJJJJJJJK..',
+    '..KJJJJJJJJJJJJJZjJJJJJJJJJJJK..',
+    '..KJlJJJjJJJJJJJZjJJJJJjJJJjjK..',
+    '..KJlJJJjJJJJJJJZjJJJJJjJJJjjK..',
+    '..KJlJJJjJJJJJJJZjJJJJJjJJJjjK..',
+    '..KJlJJJjJJJJJJJZjJJJJJjJJJjjK..',
+    '..KJlJJJjJJJJJJJZjJJJJJjJJJjjK..',
+    '..KJlJJJjJJJJJJJZjJJJJJjJJJjjK..',
+    '..KJlJJJjJJJJJJJZjJJJJJjJJJjjK..',
+    '..KJlJJJjJJJJJJJZjJJJJJjJJJjjK..',
+    '..KjjjjjjJJJJJJJZjJJJJJjjjjjjK..'
+  ];
+  const AV_PAL = {
+    K: '#2a1712', H: '#3f261a', h: '#6e4430', S: '#f1c4a5', s: '#d49a7c', E: '#33475e', W: '#ffffff',
+    M: '#a8443d', m: '#7a4a36', w: '#ffffff', J: '#bfc8b0', j: '#97a089', l: '#dde4d0', Z: '#5e6656', n: '#4a4f48'
+  };
+  const BG_DARUMA = { R: '#8a2a24', w: '#c9bcab', L: '#1a1414', O: '#1a1414', g: '#9c7a30' };
+
+  const av = document.getElementById('avatar');
+  const actx = av.getContext('2d');
+  function drawAvatar(blinking) {
+    actx.fillStyle = '#1a1220';
+    actx.fillRect(0, 0, 32, 32);
+    for (let ty = -1; ty < 4; ty++) {
+      for (let tx = -1; tx < 4; tx++) {
+        const ox = tx * 10 + (ty % 2 ? 5 : 0);
+        drawMap(actx, DARUMA, BG_DARUMA, ox, ty * 10 - 1);
+      }
+    }
+    drawMap(actx, AVATAR, AV_PAL);
+    if (blinking) {
+      actx.fillStyle = '#d49a7c';
+      actx.fillRect(12, 10, 2, 1); actx.fillRect(18, 10, 2, 1);
+      actx.fillStyle = '#3f261a';
+      actx.fillRect(12, 10, 2, 1); actx.fillRect(18, 10, 2, 1);
+    }
+  }
+  drawAvatar(false);
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduceMotion) {
+    setInterval(() => { drawAvatar(true); setTimeout(() => drawAvatar(false), 140); }, 3600);
+  }
+
+  /* ---------- Trophy (12×12) ---------- */
+  const TROPHY = [
+    '............',
+    '.GGGGGGGGGG.',
+    'GGYYYYYYYYGG',
+    'G.GYYYYYYG.G',
+    'G.GYYYYYYG.G',
+    '.GGYYYYYYGG.',
+    '...GYYYYG...',
+    '....GYYG....',
+    '.....GG.....',
+    '....GYYG....',
+    '...GGGGGG...',
+    '...DDDDDD...'
+  ];
+  const tctx = document.getElementById('trophy').getContext('2d');
+  drawMap(tctx, TROPHY, { G: '#b07d1a', Y: '#f2b632', D: '#6e4430' });
+
+  /* ---------- Inventory ---------- */
+  const SKILLS = [
+    ['API', 'API Development', 'FastAPI, Django', '#e2372c'],
+    ['UI', 'UI Development', 'Angular', '#bfc8b0'],
+    ['ETL', 'ETL Development', 'Extract, transform, load', '#f2b632'],
+    ['MOD', 'Data Modeling', 'Schemas & indexing', '#e2372c'],
+    ['SCR', 'Scripting', 'Python, JavaScript', '#bfc8b0'],
+    ['SQL', 'SQL Expertise', 'Query tuning', '#f2b632'],
+    ['DWH', 'Data Warehousing', 'dbt, layered models', '#e2372c'],
+    ['PIP', 'Pipeline Design', 'ETL pipelines & dashboards', '#bfc8b0'],
+    ['NSQ', 'NoSQL Databases', 'Unstructured data', '#f2b632'],
+    ['CTL', 'Pipeline Control', 'Stability & data quality', '#e2372c']
+  ];
+  document.getElementById('skills').innerHTML = SKILLS.map(([tag, name, detail, color]) => `
+    <li class="px-box p-4 flex flex-col gap-3 min-w-0">
+      <span class="font-display text-[10px] w-12 h-12 grid place-items-center text-ink" style="background:${color}">${tag}</span>
+      <span class="leading-tight">${name}</span>
+      <span class="text-[18px] text-muted leading-tight">${detail}</span>
+    </li>`).join('');
+
+  const TOOLS = ['Python', 'Polars', 'dbt', 'SQL', 'FastAPI', 'Django', 'Angular', 'JavaScript', 'HTML', 'Hadoop', 'Spark'];
+  document.getElementById('tools').innerHTML = TOOLS.map(t =>
+    `<li class="bg-panel2 px-3 py-1 text-sage">${t}</li>`).join('');
+
+  /* ---------- Quest log ---------- */
+  const QUESTS = [
+    { world: 5, role: 'Software Engineer', org: 'Ilkari', when: '2026 – Present', active: true, items: [
+      'Design and build web domain management infrastructure and core software.',
+      'Design and build the data infrastructure with Python, Polars and dbt.',
+      'Build dashboards and ETL pipelines for departments across the company.',
+      'Synchronize teams across projects to reach company goals.' ] },
+    { world: 4, role: 'Data Engineer', org: 'Ciklum', when: '2024 – 2026', items: [
+      'Collaborated on ETL tasks, maintaining data integrity and verifying pipeline stability.',
+      'Tuned query performance and optimized database structures for faster, more accurate reporting.',
+      'Improved data quality through cleaning, validation and transformation.',
+      'Broke complex workflows into manageable components for easier implementation and maintenance.',
+      'Built Python applications with cross-functional teams and implemented API integrations between internal systems.' ] },
+    { world: 3, role: 'Junior Data Engineer', org: 'The Workshop', when: '11/2023 – 12/2024', items: [
+      'Designed database schemas and indexing strategies for efficient storage and retrieval.',
+      'Developed scalable algorithms for large-scale data mining and analysis.',
+      'Re-engineered legacy systems with modern frameworks, reducing technical debt without hurting stability.',
+      'Explored Hadoop and Spark for processing large volumes of unstructured data.' ] },
+    { world: 2, role: 'Junior Software Engineer', org: 'The Workshop', when: '09/2022 – 11/2023', items: [
+      'Analyzed code defects and failures and proposed refactors and design fixes.',
+      'Delivered completed products within project deadlines and contributed to daily scrums.',
+      'Helped write and revise technical documentation.',
+      'Built partnerships with stakeholders in the blockchain ecosystem to share knowledge.' ] },
+    { world: 1, role: 'Researcher', org: 'ITIS "José María Troya Linero"', when: '10/2020 – 09/2022', items: [
+      'Ran studies with interdisciplinary teams and managed several research projects at once.',
+      'Gathered and organized information for research purposes.',
+      'Built app solutions with JavaScript, SQL and HTML.',
+      'Improved website performance by optimizing front-end and back-end code.' ] }
+  ];
+
+  document.getElementById('questList').innerHTML = QUESTS.map(q => `
+    <li class="px-box ${q.active ? 'px-box--gold' : ''} p-5 sm:p-7 grid gap-5 sm:grid-cols-[64px_1fr] min-w-0">
+      <canvas width="8" height="8" class="pixelated w-16 h-16" data-daruma="${q.active ? 'one' : 'two'}" aria-hidden="true"></canvas>
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <span class="label text-gold">World ${q.world}</span>
+          <span class="label ${q.active ? 'text-ink bg-gold px-2 py-1' : 'text-muted'}">${q.active ? '<span class="blink">●</span> In progress' : 'Cleared'}</span>
+        </div>
+        <h3 class="font-display text-[12px] sm:text-[14px] leading-relaxed mt-4">${q.role}</h3>
+        <p class="mt-2 text-sage">${q.org} · Málaga <span class="text-muted">· ${q.when}</span></p>
+        <ul class="mt-4 grid gap-1 max-w-[70ch]">${q.items.map(i => `<li class="bullet">${i}</li>`).join('')}</ul>
+      </div>
+    </li>`).join('');
+
+  document.querySelectorAll('canvas[data-daruma]').forEach(c => {
+    const both = c.dataset.daruma === 'two';
+    drawMap(c.getContext('2d'), DARUMA, { R: '#e2372c', w: '#f6efe2', L: '#1a1414', O: both ? '#1a1414' : '#f6efe2', g: '#f2b632' });
+  });
+
+  /* ---------- 8-bit blip (plays only after a click) ---------- */
+  let audio;
+  function blip() {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.type = 'square';
+      o.frequency.setValueAtTime(660, audio.currentTime);
+      o.frequency.setValueAtTime(990, audio.currentTime + 0.05);
+      g.gain.setValueAtTime(0.05, audio.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.12);
+      o.connect(g).connect(audio.destination);
+      o.start(); o.stop(audio.currentTime + 0.13);
+    } catch (e) { /* no sound available */ }
+  }
+  document.querySelectorAll('[data-sfx]').forEach(el => el.addEventListener('click', blip));
+
+  /* ---------- Copy buttons ---------- */
+  const toast = document.getElementById('toast');
+  function selectText(el) {
+    const r = document.createRange(); r.selectNodeContents(el);
+    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+  document.querySelectorAll('[data-copy]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const el = document.getElementById(btn.dataset.copy);
+      const text = el.textContent.trim();
+      const done = () => { toast.textContent = 'Copied: ' + text; };
+      const fallback = () => { selectText(el); toast.textContent = 'Selected · press Ctrl/Cmd+C'; };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else fallback();
+    });
+  });
+})();
+</script>
+
+</body></html>
